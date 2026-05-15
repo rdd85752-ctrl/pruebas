@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tareas</title>
+
+  <!-- Supabase SDK (protección contra SQL injection vía parámetros seguros) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════ AUTH ═══════════════════════════════ -->
+  <div id="auth-screen" class="screen active">
+    <div class="auth-card card">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <h1>Tareas</h1>
+      </div>
+      <p class="brand-sub">Tu espacio de trabajo personal.</p>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="login">Ingresar</button>
+        <button class="tab" data-tab="register">Registrarse</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="form-login" class="form-section active">
+        <div class="field">
+          <label for="login-email">Correo</label>
+          <input type="email" id="login-email" placeholder="tu@correo.com" autocomplete="email" maxlength="254" />
+        </div>
+        <div class="field">
+          <label for="login-password">Contraseña</label>
+          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" maxlength="128" />
+        </div>
+        <button id="btn-login" class="btn-primary">Ingresar</button>
+      </div>
+
+      <!-- Register Form -->
+      <div id="form-register" class="form-section">
+        <div class="field">
+          <label for="reg-name">Nombre</label>
+          <input type="text" id="reg-name" placeholder="Tu nombre" maxlength="100" />
+        </div>
+        <div class="field">
+          <label for="reg-email">Correo</label>
+          <input type="email" id="reg-email" placeholder="tu@correo.com" autocomplete="email" maxlength="254" />
+        </div>
+        <div class="field">
+          <label for="reg-password">Contraseña</label>
+          <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" maxlength="128" />
+        </div>
+        <button id="btn-register" class="btn-primary">Crear cuenta</button>
+      </div>
+
+      <div id="auth-msg" class="msg hidden"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ APP ═══════════════════════════════ -->
+  <div id="app-screen" class="screen">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <span class="brand-dot"></span>
+        <span class="header-title">Tareas</span>
+      </div>
+      <div class="header-right">
+        <span id="user-name" class="user-chip"></span>
+        <button id="btn-logout" class="btn-ghost">Salir</button>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="app-main">
+
+      <!-- Stats bar -->
+      <div class="stats-bar">
+        <div class="stat-card card">
+          <span id="stat-total" class="stat-num">0</span>
+          <span class="stat-label">Total</span>
+        </div>
+        <div class="stat-card card">
+          <span id="stat-pending" class="stat-num accent">0</span>
+          <span class="stat-label">Pendientes</span>
+        </div>
+        <div class="stat-card card">
+          <span id="stat-done" class="stat-num done">0</span>
+          <span class="stat-label">Completadas</span>
+        </div>
+      </div>
+
+      <!-- New Task Card -->
+      <div class="new-task-card card">
+        <h2 class="section-title">Nueva tarea</h2>
+        <div class="new-task-row">
+          <div class="field grow">
+            <input
+              type="text"
+              id="new-task-desc"
+              placeholder="Describe tu tarea…"
+              maxlength="500"
+            />
+            <span id="char-count" class="char-count">0 / 500</span>
+          </div>
+          <div class="field">
+            <select id="new-task-priority">
+              <option value="baja">🟢 Baja</option>
+              <option value="media" selected>🟡 Media</option>
+              <option value="alta">🔴 Alta</option>
+            </select>
+          </div>
+          <div class="field">
+            <input type="date" id="new-task-date" />
+          </div>
+          <button id="btn-add-task" class="btn-primary">Agregar</button>
+        </div>
+        <div id="task-msg" class="msg hidden"></div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <button class="filter-btn active" data-filter="todas">Todas</button>
+        <button class="filter-btn" data-filter="pendiente">Pendientes</button>
+        <button class="filter-btn" data-filter="completada">Completadas</button>
+      </div>
+
+      <!-- Task List -->
+      <div id="task-list" class="task-list">
+        <div class="empty-state" id="empty-state">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="8" y="12" width="48" height="40" rx="4" stroke="currentColor" stroke-width="2"/>
+            <path d="M20 24h24M20 32h16M20 40h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <p>Sin tareas aún.<br/>¡Crea la primera!</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Modal de edición -->
+  <div id="edit-modal" class="modal-overlay hidden">
+    <div class="modal-card card">
+      <h3>Editar tarea</h3>
+      <input type="hidden" id="edit-task-id" />
+      <div class="field">
+        <label for="edit-desc">Descripción</label>
+        <textarea id="edit-desc" rows="3" maxlength="500"></textarea>
+        <span id="edit-char-count" class="char-count">0 / 500</span>
+      </div>
+      <div class="field-row">
+        <div class="field grow">
+          <label for="edit-priority">Prioridad</label>
+          <select id="edit-priority">
+            <option value="baja">🟢 Baja</option>
+            <option value="media">🟡 Media</option>
+            <option value="alta">🔴 Alta</option>
+          </select>
+        </div>
+        <div class="field grow">
+          <label for="edit-date">Fecha límite</label>
+          <input type="date" id="edit-date" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-cancel-edit" class="btn-ghost">Cancelar</button>
+        <button id="btn-save-edit" class="btn-primary">Guardar</button>
+      </div>
+      <div id="edit-msg" class="msg hidden"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
